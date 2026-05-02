@@ -1,0 +1,154 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+
+  @@map("roles_enum")
+}
+
+enum LessonType {
+  TEXT
+  VIDEO
+  ATTACHMENT
+
+  @@map("lesson_types_enum")
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  password         String
+  name             String?
+  role             Role             @default(STUDENT)
+
+  createdCourses Course[] @relation("CourseCreator")
+
+  purchases        Purchase[]
+
+  progress LessonProgress[]
+
+  certificates     Certificate[]
+
+  @@map("users")
+}
+
+model Course {
+  id          String  @id @default(uuid())
+  title       String
+  description String
+  isPublished Boolean @default(false)
+  price       Decimal @db.Decimal(10, 2)
+  coverImage  String?
+
+  teacherId String
+  teacher   User   @relation("CourseCreator", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  modules Module[]
+
+  purchases Purchase[]
+
+  certificates Certificate[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("courses")
+}
+
+model Module {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+  order       Int
+
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([courseId, order])
+  @@map("modules")
+}
+
+model Lesson {
+  id       String     @id @default(uuid())
+  title    String
+  content  String?
+  videoUrl String?
+  fileUrl  String?
+  type     LessonType @default(TEXT)
+  order    Int
+
+  moduleId String
+  module   Module @relation(fields: [moduleId], references: [id])
+
+  progress LessonProgress[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([moduleId, order])
+  @@map("lessons")
+}
+
+model Purchase {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  purchasedAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@map("purchases")
+}
+
+model LessonProgress {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+
+  @@unique([userId, lessonId])
+  @@map("lesson_progress")
+}
+
+model Certificate {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  issueDate DateTime @default(now())
+  pdfUrl    String?
+
+  @@unique([userId, courseId])
+  @@map("certificates")
+}
