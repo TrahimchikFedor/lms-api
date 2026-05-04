@@ -1,8 +1,9 @@
-import { Controller, Post, UseGuards, Request, Body } from '@nestjs/common';
+import { Controller, Post, UseGuards, Body } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
-import { AuthGuard } from '@nestjs/passport';
 import { LocalAuthGuard } from './guards/local-auth.guard.js';
 import { Public } from './decorators/public.decorator.js';
+import { LoginUserDto, RegisterUserDto } from './dto/user.dto.js';
+import { RefreshTokenDto, ResponseTokensDto } from './dto/tokens.dto.js';
 
 @Controller('auth')
 export class AuthController {
@@ -11,20 +12,19 @@ export class AuthController {
     @UseGuards(LocalAuthGuard)
     @Public()
     @Post('login')
-    async login(@Request() req) {
-        return await this.authService.login(req.user);
+    async login(@Body() user: LoginUserDto): Promise<ResponseTokensDto> {
+        return await this.authService.login(user);
     }
 
     @Public()
 	@Post('register')
-    async register(@Request() req) {
-        return await this.authService.register(req.user);
+    async register(@Body() user: RegisterUserDto): Promise<ResponseTokensDto> {
+        return await this.authService.register(user);
     }
-
 
     @Public()
 	@Post('refresh')
-	async refreshToken(@Body() dto: any){
-		return await this.authService.refresh(dto);
+	async refreshToken(@Body() dto: RefreshTokenDto): Promise<ResponseTokensDto> {
+		return await this.authService.refresh(dto.refreshToken);
 	}
 }
